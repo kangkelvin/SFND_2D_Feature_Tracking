@@ -41,7 +41,7 @@ int main(int argc, const char *argv[]) {
                                  // buffer) at the same time
   vector<DataFrame> dataBuffer;  // list of data frames which are held in memory
                                  // at the same time
-  bool bVis = true;             // visualize results
+  bool bVis = true;              // visualize results
 
   /* MAIN LOOP OVER ALL IMAGES */
 
@@ -80,20 +80,21 @@ int main(int argc, const char *argv[]) {
     // extract 2D keypoints from current image
     vector<cv::KeyPoint>
         keypoints;  // create empty feature list for current image
-    string detectorType = "AKAZE";
+    vector<cv::KeyPoint> raw_keypoints;
+    string detectorType = "SHITOMASI";
 
     //// STUDENT ASSIGNMENT
     //// TASK MP.2 -> add the following keypoint detectors in file
     /// matching2D.cpp and enable string-based selection based on detectorType /
     ///-> HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
 
-    bVis = true;
+    bVis = false;
     if (detectorType.compare("SHITOMASI") == 0) {
-      detKeypointsShiTomasi(keypoints, imgGray, bVis);
+      detKeypointsShiTomasi(raw_keypoints, imgGray, bVis);
     } else if (detectorType.compare("HARRIS") == 0) {
-      detKeypointsHarris(keypoints, imgGray, bVis);
+      detKeypointsHarris(raw_keypoints, imgGray, bVis);
     } else {
-      detKeypointsModern(keypoints, imgGray, detectorType, bVis);
+      detKeypointsModern(raw_keypoints, imgGray, detectorType, bVis);
     }
     //// EOF STUDENT ASSIGNMENT
 
@@ -104,8 +105,16 @@ int main(int argc, const char *argv[]) {
     bool bFocusOnVehicle = true;
     cv::Rect vehicleRect(535, 180, 180, 150);
     if (bFocusOnVehicle) {
-      // ...
+      std::for_each(
+          raw_keypoints.begin(), raw_keypoints.end(),
+          [&vehicleRect, &keypoints](cv::KeyPoint keypoint) {
+            if (vehicleRect.contains(
+                    keypoint.pt)) {  // insert only keypoints inside box
+              keypoints.push_back(keypoint);
+            }
+          });
     }
+    raw_keypoints.clear();  // free up memory
 
     //// EOF STUDENT ASSIGNMENT
 
@@ -175,7 +184,7 @@ int main(int argc, const char *argv[]) {
       cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
 
       // visualize matches between current and previous image
-      bVis = false;
+      bVis = true;
       if (bVis) {
         cv::Mat matchImg = ((dataBuffer.end() - 1)->cameraImg).clone();
         cv::drawMatches((dataBuffer.end() - 2)->cameraImg,
