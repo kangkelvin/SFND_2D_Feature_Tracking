@@ -81,7 +81,7 @@ int main(int argc, const char *argv[]) {
     vector<cv::KeyPoint>
         keypoints;  // create empty feature list for current image
     vector<cv::KeyPoint> raw_keypoints;
-    string detectorType = "SHITOMASI";
+    string detectorType = "ORB";
 
     //// STUDENT ASSIGNMENT
     //// TASK MP.2 -> add the following keypoint detectors in file
@@ -144,7 +144,7 @@ int main(int argc, const char *argv[]) {
     /// FREAK, AKAZE, SIFT
 
     cv::Mat descriptors;
-    string descriptorType = "BRISK";  // BRIEF, ORB, FREAK, AKAZE, SIFT
+    string descriptorType = "ORB";  // BRIEF, ORB, FREAK, AKAZE, SIFT
     descKeypoints((dataBuffer.end() - 1)->keypoints,
                   (dataBuffer.end() - 1)->cameraImg, descriptors,
                   descriptorType);

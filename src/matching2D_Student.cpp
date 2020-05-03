@@ -47,8 +47,12 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img,
                                 // sampling the neighbourhood of a keypoint.
 
     extractor = cv::BRISK::create(threshold, octaves, patternScale);
-  } else {
-    //...
+  } else if (descriptorType.compare("ORB") == 0) {
+    extractor = cv::ORB::create();
+  } else if (descriptorType.compare("AKAZE") == 0) {
+    extractor = cv::AKAZE::create();
+  } else if (descriptorType.compare("SIFT") == 0) {
+    // extractor = cv::SIFT::create();s
   }
 
   // perform feature description
