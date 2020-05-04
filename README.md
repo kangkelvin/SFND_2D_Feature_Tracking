@@ -32,3 +32,24 @@ See the classroom instruction and code comments for more details on each of thes
 2. Make a build directory in the top level directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./2D_feature_tracking`.
+
+## My Notes
+
+#### [Different Feature Detectors and Descriptor](https://docs.opencv.org/master/db/d27/tutorial_py_table_of_contents_feature2d.html)
+
+1. **Harris**: old method, don't use. It finds corners and uses it as features
+2. **ShiTomasi** aka GoodFeaturesToTrack: old method, don't use also
+3. **SIFT**: slow and patented, don't use. Uses intensity gradient description aka HOG (Histogram of Intensity Gradient)
+4. **FAST, BRIEF, ORB, BRISK, FREAK, KAZE**: free and easy to use. Uses binary description
+5. [Full list here](https://docs.opencv.org/3.4.9/d0/d13/classcv_1_1Feature2D.html)
+
+#### [Descriptor Matcher](https://docs.opencv.org/3.4/db/d39/classcv_1_1DescriptorMatcher.html)
+
+1. **BF Matcher**: brute force matcher, basically compare everything with O(n^2) complexity. If description is in HOG format (e.g. SIFT), must use cv::NORM_L2 distance, if binary (most of them are) use cv::NORM_HAMMING for the normType
+2. **FLANN Matcher**: uses magic aka deep learning to match. Fast but slightly less accurate. Have bug in openCV, must convert descriptions to CV_32F first to prevent runtime error
+
+##### Matching Filter
+
+1. **[NN](https://docs.opencv.org/3.4/db/d39/classcv_1_1DescriptorMatcher.html#a0f046f47b68ec7074391e1e85c750cba)**: nearest neighbour, easy and straightforward, but can have more false positives
+2. **[kNN](https://docs.opencv.org/3.4/db/d39/classcv_1_1DescriptorMatcher.html#a378f35c9b1a5dfa4022839a45cdf0e89)**: kth nearest neighbour usually 2, to compare the best vs 2nd best matches, if they are too near, means not a good match. Good threshold is 80% ratio. Slower but more accurate
+
