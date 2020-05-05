@@ -1,4 +1,6 @@
 #include <numeric>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/xfeatures2d/nonfree.hpp>
 #include "matching2D.hpp"
 
 using namespace std;
@@ -15,10 +17,19 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource,
   cv::Ptr<cv::DescriptorMatcher> matcher;
 
   if (matcherType.compare("MAT_BF") == 0) {
-    int normType = cv::NORM_HAMMING;
+    int normType = descriptorType.compare("DES_BINARY") == 0 ? cv::NORM_HAMMING
+                                                             : cv::NORM_L2;
     matcher = cv::BFMatcher::create(normType, crossCheck);
   } else if (matcherType.compare("MAT_FLANN") == 0) {
-    // ...
+    if (descSource.type() != CV_32F) {
+      // OpenCV bug workaround : convert binary descriptors to floating point
+      // due to a bug in current OpenCV implementation
+      descSource.convertTo(descSource, CV_32F);
+    }
+    if (descRef.type() != CV_32F) {
+      descRef.convertTo(descRef, CV_32F);
+    }
+    matcher = cv::FlannBasedMatcher::create();
   }
 
   // perform matching task
@@ -27,10 +38,18 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource,
     matcher->match(
         descSource, descRef,
         matches);  // Finds the best match for each descriptor in desc1
-  } else if (selectorType.compare("SEL_KNN") ==
-             0) {  // k nearest neighbors (k=2)
+  } else if (selectorType.compare("SEL_KNN") == 0) {
+    // k nearest neighbors (k=2)
+    std::vector<std::vector<cv::DMatch>> knn_matches;
+    float knn_match_threshold = 0.8;
 
-    // ...
+    matcher->knnMatch(descSource, descRef, knn_matches, 2);
+
+    for (auto knn_match : knn_matches) {
+      if (knn_match[0].distance / knn_match[1].distance > 0.8) {
+        matches.push_back(knn_match[0]);
+      }
+    }
   }
 }
 
@@ -51,8 +70,12 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img,
     extractor = cv::ORB::create();
   } else if (descriptorType.compare("AKAZE") == 0) {
     extractor = cv::AKAZE::create();
+  } else if (descriptorType.compare("FREAK") == 0) {
+    extractor = cv::xfeatures2d::FREAK::create();
+  } else if (descriptorType.compare("BRIEF") == 0) {
+    extractor = cv::xfeatures2d::BriefDescriptorExtractor::create();
   } else if (descriptorType.compare("SIFT") == 0) {
-    // extractor = cv::SIFT::create();s
+    extractor = cv::xfeatures2d::SIFT::create();
   }
 
   // perform feature description
@@ -79,7 +102,6 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img,
   double k = 0.04;
 
   // Apply corner detection
-  double t = (double)cv::getTickCount();
   vector<cv::Point2f> corners;
   cv::goodFeaturesToTrack(img, corners, maxCorners, qualityLevel, minDistance,
                           cv::Mat(), blockSize, false, k);
@@ -91,9 +113,7 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img,
     newKeyPoint.size = blockSize;
     keypoints.push_back(newKeyPoint);
   }
-  t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-  cout << "Shi-Tomasi detection with n=" << keypoints.size() << " keypoints in "
-       << 1000 * t / 1.0 << " ms" << endl;
+
 
   // visualize results
   if (bVis) {
@@ -195,8 +215,8 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img,
     auto detector = cv::AKAZE::create();
     detector->detect(img, keypoints);
   } else if (detectorType.compare("SIFT") == 0) {
-    // auto detector = cv::SIFT::create();
-    // detector->detect(img, keypoints);
+    auto detector = cv::xfeatures2d::SIFT::create();
+    detector->detect(img, keypoints);
   }
   if (bVis) {
     string windowName = detectorType + " Detection Results";
