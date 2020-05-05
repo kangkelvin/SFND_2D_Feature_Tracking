@@ -77,13 +77,7 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img,
   } else if (descriptorType.compare("SIFT") == 0) {
     extractor = cv::xfeatures2d::SIFT::create();
   }
-
-  // perform feature description
-  double t = (double)cv::getTickCount();
   extractor->compute(img, keypoints, descriptors);
-  t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-  cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0
-       << " ms" << endl;
 }
 
 // Detect keypoints in image using the traditional Shi-Thomasi detector
@@ -113,7 +107,6 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img,
     newKeyPoint.size = blockSize;
     keypoints.push_back(newKeyPoint);
   }
-
 
   // visualize results
   if (bVis) {
@@ -193,31 +186,20 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img,
 
 void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img,
                         std::string detectorType, bool bVis) {
+  cv::Ptr<cv::Feature2D> detector;
   if (detectorType.compare("FAST") == 0) {
-    int threshold = 10;
-    bool nonmaxSuppression = true;
-    auto type = cv::FastFeatureDetector::TYPE_9_16;
-
-    auto detector =
-        cv::FastFeatureDetector::create(threshold, nonmaxSuppression, type);
-    detector->detect(img, keypoints);
+    detector = cv::FastFeatureDetector::create();
   } else if (detectorType.compare("BRISK") == 0) {
-    int threshold = 30;
-    int octaves = 3;
-    float patternScale = 1.0f;
-
-    auto detector = cv::BRISK::create(threshold, octaves, patternScale);
-    detector->detect(img, keypoints);
+    detector = cv::BRISK::create();
   } else if (detectorType.compare("ORB") == 0) {
-    auto detector = cv::ORB::create();
-    detector->detect(img, keypoints);
+    detector = cv::ORB::create();
   } else if (detectorType.compare("AKAZE") == 0) {
-    auto detector = cv::AKAZE::create();
-    detector->detect(img, keypoints);
+    detector = cv::AKAZE::create();
   } else if (detectorType.compare("SIFT") == 0) {
-    auto detector = cv::xfeatures2d::SIFT::create();
-    detector->detect(img, keypoints);
+    detector = cv::xfeatures2d::SIFT::create();
   }
+  detector->detect(img, keypoints);
+
   if (bVis) {
     string windowName = detectorType + " Detection Results";
     cv::namedWindow(windowName, 5);

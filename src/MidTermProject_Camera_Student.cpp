@@ -23,9 +23,10 @@ int main(int argc, const char *argv[]) {
   /* INIT VARIABLES AND DATA STRUCTURES */
 
   vector<string> detectorTypes = {"SHITOMASI", "HARRIS", "FAST", "BRISK",
-                                  "ORB", "AKAZE", "SIFT"};
+                                  "ORB",       "AKAZE",  "SIFT"};
   vector<string> descriptorTypes = {"BRISK", "SIFT", "BRIEF", "FREAK", "ORB"};
 
+  // Permute over different detector + descriptor, except for AKAZE AKAZE combo
   for (auto detectorType : detectorTypes) {
     for (auto descriptorType : descriptorTypes) {
       // data location
@@ -33,14 +34,14 @@ int main(int argc, const char *argv[]) {
 
       // camera
       string imgBasePath = dataPath + "images/";
-      string imgPrefix =
-          "KITTI/2011_09_26/image_00/data/000000";  // left camera, color
+      // left camera, color
+      string imgPrefix = "KITTI/2011_09_26/image_00/data/000000";
       string imgFileType = ".png";
       int imgStartIndex = 0;  // first file index to load (assumes Lidar and
                               // camera names have identical naming convention)
       int imgEndIndex = 9;    // last file index to load
-      int imgFillWidth =
-          4;  // no. of digits which make up the file index (e.g. img-0001.png)
+      // no. of digits which make up the file index (e.g. img-0001.png)
+      int imgFillWidth = 4;
 
       // misc
       int dataBufferSize = 2;  // no. of images which are held in memory (ring
@@ -85,10 +86,9 @@ int main(int argc, const char *argv[]) {
         /* DETECT IMAGE KEYPOINTS */
 
         // extract 2D keypoints from current image
-        vector<cv::KeyPoint>
-            keypoints;  // create empty feature list for current image
+        // create empty feature list for current image
+        vector<cv::KeyPoint> keypoints;
         vector<cv::KeyPoint> raw_keypoints;
-        // string detectorType = "SHITOMASI";
 
         //// STUDENT ASSIGNMENT
         //// TASK MP.2 -> add the following keypoint detectors in file
@@ -108,7 +108,8 @@ int main(int argc, const char *argv[]) {
           detKeypointsModern(raw_keypoints, imgGray, detectorType, bVis);
         }
 
-        detector_t = ((double)cv::getTickCount() - detector_t) / cv::getTickFrequency();
+        detector_t =
+            ((double)cv::getTickCount() - detector_t) / cv::getTickFrequency();
         detector_t = 1000 * detector_t / 1.0;
         //// EOF STUDENT ASSIGNMENT
 
@@ -160,7 +161,7 @@ int main(int argc, const char *argv[]) {
 
         // push keypoints and descriptor for current frame to end of data buffer
         (dataBuffer.end() - 1)->keypoints = keypoints;
-        cout << "#2 : DETECT KEYPOINTS done" << endl;
+        cout << "#2 : DETECT KEYPOINTS done with " << detectorType << endl;
 
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
@@ -171,8 +172,6 @@ int main(int argc, const char *argv[]) {
         /// ORB, FREAK, AKAZE, SIFT
 
         cv::Mat descriptors;
-        // string descriptorType = "SIFT";  // BRIEF, ORB, FREAK, AKAZE, BRISK,
-        // SIFT
 
         double descriptor_t = (double)cv::getTickCount();
 
@@ -180,27 +179,16 @@ int main(int argc, const char *argv[]) {
                       (dataBuffer.end() - 1)->cameraImg, descriptors,
                       descriptorType);
 
-        descriptor_t =
-            ((double)cv::getTickCount() - descriptor_t) / cv::getTickFrequency();
+        descriptor_t = ((double)cv::getTickCount() - descriptor_t) /
+                       cv::getTickFrequency();
         descriptor_t = 1000 * descriptor_t / 1.0;
 
-        bool writeDescResult = false;
-        if (writeDescResult) {
-          string fullDir = "../data/output.txt";
-          std::fstream out_file;
-          out_file.open(fullDir, ios::app);
-          if (out_file.is_open()) {
-            out_file << descriptorType << ", " << imgIndex << ", "
-                     << descriptor_t << std::endl;
-          }
-          out_file.close();
-        }
         //// EOF STUDENT ASSIGNMENT
 
         // push descriptors for current frame to end of data buffer
         (dataBuffer.end() - 1)->descriptors = descriptors;
 
-        cout << "#3 : EXTRACT DESCRIPTORS done" << endl;
+        cout << "#3 : EXTRACT DESCRIPTORS done with " << descriptorType << endl;
 
         if (dataBuffer.size() >
             1)  // wait until at least two images have been processed
@@ -210,9 +198,7 @@ int main(int argc, const char *argv[]) {
           vector<cv::DMatch> matches;
           string matcherType = "MAT_BF";  // MAT_BF, MAT_FLANN
           string descriptorDataType =
-              descriptorType.compare("SIFT") == 0
-                  ? "DES_HOG"
-                  : "DES_BINARY";           // DES_BINARY, DES_HOG
+              descriptorType.compare("SIFT") == 0 ? "DES_HOG" : "DES_BINARY";
           string selectorType = "SEL_KNN";  // SEL_NN, SEL_KNN
 
           //// STUDENT ASSIGNMENT
@@ -248,7 +234,7 @@ int main(int argc, const char *argv[]) {
           cout << "#4 : MATCH KEYPOINT DESCRIPTORS done" << endl;
 
           // visualize matches between current and previous image
-          bVis = false;
+          bVis = true;
           if (bVis) {
             cv::Mat matchImg = ((dataBuffer.end() - 1)->cameraImg).clone();
             cv::drawMatches((dataBuffer.end() - 2)->cameraImg,
@@ -267,10 +253,8 @@ int main(int argc, const char *argv[]) {
           }
           bVis = false;
         }
-
       }  // eof loop over all images
     }
   }
-
   return 0;
 }
